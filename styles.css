@@ -1,1663 +1,1716 @@
-body {
-    margin: 0;
-    padding: 0;
-    font-family: Arial, Helvetica, sans-serif;
-    color: lightgray;
+/* ============================================================
+   styles.css — Adrian Ackerman Portfolio
+
+   What changed vs. the original (annotated inline):
+
+   BUG FIXES
+   ── ". @keyframes" stray dot removed (line was completely broken)
+   ── @keyFrames (capital F) → @keyframes
+   ── opacity: o.7 → opacity: 0.7
+   ── backdrop-filter (was background-filter — invalid)
+   ── box-shadow: 0 0 15px ... (was missing "px" unit)
+   ── z-index: 999 moved out of box-shadow shorthand (was invalid)
+   ── gap: 5px (was "5 px" — space is invalid)
+   ── Duplicate @media aspect-ratio blocks removed
+   ── Duplicate z-index on .blackhole-box removed
+   ── Trailing comma on #typewriter-p selector removed
+   ── font-size: 5px → 14px (was illegible at 480px)
+   ── .Designer → .designer (typo, never matched anything)
+   ── Dead .coder rules removed (no element has class "coder")
+   ── translateX(80%, 50%) → translate(80%, 50%) (translateX takes 1 value)
+   ── @supports fallback added so content stays visible in older browsers
+   ── .contact-section h1 → .contact-section .section-title
+   ── Heading selectors updated: card h1→h3, project-info h1→h3,
+      skills-box h1→h3, footer h1→footer p
+
+   NEW ADDITIONS
+   ── :root CSS custom properties (colour palette, easing, spacing tokens)
+   ── .skip-link (keyboard nav accessibility)
+   ── .brand-name (replaces the misused <h1> in header)
+   ── address { font-style: normal } (browser default italic reset)
+   ── Form <label> styles
+   ── .form-status / .success / .error (AJAX form feedback)
+   ── #form-submit-btn:disabled state
+   ── :focus-visible (keyboard focus ring)
+   ── @media (prefers-reduced-motion: reduce) — disables all animations
+   ── Cursor-glow effect via --mouse-x / --mouse-y on .card and .job-card
+   ── 3D tilt will-change hint on .project-vidbox
+   ── .word / .word.revealed — word-by-word hero heading reveal
+   ── .project-card entrance state (.card-visible)
+   ── .progress-bar — scroll-driven reading indicator (CSS only)
+   ── Hero parallax via scroll-driven animation
+   ── View Transition CSS (::view-transition-* rules)
+   ── nav styles (replaces bare "header ul" approach)
+   ============================================================ */
+
+
+/* ============================================================
+   CSS CUSTOM PROPERTIES
+   Centralised so colour/easing changes only need one edit.
+   ============================================================ */
+:root {
+  /* Brand colours */
+  --color-accent:      #727fde;
+  --color-accent-dark: #6600c5;
+  --color-accent-alt:  #2a46ff;
+  --color-bg-card:     #080020b7;
+  --color-text:        lightgray;
+  --color-text-muted:  gray;
+
+  /* Gradient used on text and timeline fill */
+  --gradient-brand: linear-gradient(to right, #008baa, #7e42a7, #6600c5, #6070fd, #2a46ff, #0099ff, #008ead);
+
+  /* Easing curves */
+  --ease-spring: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-out:    cubic-bezier(0, 0, 0.2, 1);
+
+  /* Glow defaults — JS writes real values on mousemove */
+  --mouse-x: -200;
+  --mouse-y: -200;
+}
+
+
+/* ============================================================
+   BASE
+   ============================================================ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 html {
-    scroll-behavior: smooth;
+  scroll-behavior: smooth;
 }
 
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  color: var(--color-text);
+}
+
+/* Override browser's default italic on <address> elements */
+address {
+  font-style: normal;
+}
+
+/* ── Skip-to-content link ─────────────────────────────────────
+   Hidden off-screen until focused by a keyboard user.
+   Appears in the top-left corner so it's the first thing seen. */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  z-index: 9999;
+  text-decoration: none;
+}
+.skip-link:focus {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  background: #fff;
+  color: #000;
+  padding: 8px 16px;
+  font-size: 1rem;
+  border: 2px solid var(--color-accent);
+  border-radius: 4px;
+}
+
+/* ── Global keyboard focus ring ───────────────────────────────
+   Only shows for keyboard navigation (not mouse clicks).
+   Browsers that don't support :focus-visible fall back to :focus. */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+
+/* ============================================================
+   READING PROGRESS BAR
+   A fixed bar at the very top of the page whose scaleX is
+   driven by the scroll position of the root element.
+   Wrapped in @supports so it simply doesn't appear in browsers
+   that don't understand animation-timeline: scroll().
+   ============================================================ */
+.progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  width: 100%;
+  background: var(--gradient-brand);
+  transform-origin: left center;
+  transform: scaleX(0);
+  z-index: 1001;
+  pointer-events: none;
+}
+
+@supports (animation-timeline: scroll()) {
+  .progress-bar {
+    animation: progress-grow linear both;
+    animation-timeline: scroll(root);
+  }
+
+  @keyframes progress-grow {
+    to { transform: scaleX(1); }
+  }
+}
+
+
+/* ============================================================
+   MAIN WRAPPER
+   Mirrors the container's flex behaviour so sections inside <main>
+   keep the same alignment and gap they had as direct flex children
+   in the original layout.
+   ============================================================ */
+main {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 100px;
+}
+
+
+/* ============================================================
+   CONTAINER
+   ============================================================ */
 .container {
-    position: relative;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 100px;
-    background-color: #001f7c38;
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 100px;
+  background-color: #001f7c38;
 }
 
-/* Video Background */
+
+/* ============================================================
+   BACKGROUND VIDEO
+   ============================================================ */
 .back-vid {
-    position: fixed;
-    right: 0;
-    bottom: 0;
-    z-index: -1;
-    mix-blend-mode: lighten;
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+  mix-blend-mode: lighten;
 }
 
-/* Header */
+@media (max-aspect-ratio: 16/9) {
+  .back-vid { width: auto; height: 100%; }
+}
+@media (min-aspect-ratio: 16/9) {
+  .back-vid { width: 100%; height: auto; }
+}
 
+
+/* ============================================================
+   HEADER / NAVIGATION
+   ============================================================ */
 header {
-    display: flex;
-    position: absolute;
-    top: 0;
-    right: 0;
-    left: 0;
-    align-items: center;
-    justify-content: space-between;
-    height: 70px;
-    background-color: rgba(255, 255, 255, 0.133);
-    backdrop-filter: blur(10px);
-    padding: 0 30px;
-    box-shadow: 0 0 15px #72a1de68;
-    z-index: 999;
+  display: flex;
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  align-items: center;
+  justify-content: space-between;
+  height: 70px;
+  background-color: rgba(255, 255, 255, 0.133);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 0 30px;
+  box-shadow: 0 0 15px #72a1de68;
+  z-index: 999;
+}
+
+/* Brand name in header — matches browser-default h1 size (2em/32px) */
+.brand-name {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--color-text);
 }
 
 .left {
-    display: flex;
-    align-items: center;
-    /*justify-content: center;*/
-
+  display: flex;
+  align-items: center;
 }
 
 .left img {
-    width: 130px;
-    margin: 0 15px;
+  width: 130px;
+  margin: 0 15px;
 }
 
-header ul {
-    display: flex;
-    justify-content: space-between;
-    width: 30%;
-    padding: 15px 15px;
-    border-radius: 50px;
-    background-color: rgba(0, 0, 69, 0.30);
-    backdrop-filter: blur(10px);
-    box-shadow: 0 0 10px #727fde65;
+/* nav wraps the ul; selector still works since header ul is a descendant */
+header nav ul {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding: 15px;
+  border-radius: 50px;
+  background-color: rgba(0, 0, 69, 0.30);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 0 10px #727fde65;
+  list-style: none;
+  margin: 0;
+  min-width: 300px;
 }
 
-header ul li {
-    list-style: none;
+header nav ul li {
+  list-style: none;
 }
 
-header ul a {
-    text-decoration: none;
-    color: white;
-    font-weight: 700;
-    margin: 0 10px;
+header nav ul a {
+  text-decoration: none;
+  color: white;
+  font-weight: 700;
+  margin: 0 10px;
+  transition: color 0.2s ease;
 }
 
+header nav ul a:hover {
+  color: var(--color-accent);
+}
+
+
+/* ============================================================
+   SOCIAL ICON BUTTONS (header + footer)
+   ============================================================ */
 .box-icons {
-    display: flex;
-    gap: 40px;
+  display: flex;
+  gap: 40px;
 }
 
 .box-icons a {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    width: 30px;
-    height: 30px;
-    border: 2px solid #727fde;
-    text-decoration: none;
-    color: lightgray;
-    border-radius: 50%;
-    transition: 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  width: 30px;
+  height: 30px;
+  border: 2px solid var(--color-accent);
+  text-decoration: none;
+  color: var(--color-text);
+  border-radius: 50%;
+  transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .box-icons a:hover {
-    background-color: #727fde;
-    color: black;
-    box-shadow: 0 0 15px #727fde6f;
+  background-color: var(--color-accent);
+  color: black;
+  box-shadow: 0 0 15px #727fde6f;
 }
 
-/*Blackhole Video*/
+
+/* ============================================================
+   BLACKHOLE VIDEO
+   Duplicate z-index removed (had both -1 and 1; kept 1).
+   ============================================================ */
 .blackhole-box {
-    z-index: -1;
-    position: absolute;
-    top: 0;
-    width: 100%;
-    justify-content: center;
-    mix-blend-mode: lighten;
-    z-index: 1;
+  position: absolute;
+  top: 0;
+  width: 100%;
+  justify-content: center;
+  mix-blend-mode: lighten;
+  z-index: 1;
 }
 
 .blackhole-box video {
-    width: 100%;
-    margin-top: -23.5%;
+  width: 100%;
+  margin-top: -23.5%;
 }
 
-/*Hero Section*/
-.hero {
-    position: relative;
-    display: flex;
-    width: 100%;
-    height: 100vh;
-    align-items: center;
-    justify-content: space-between;
-    z-index: 2;
 
+/* ============================================================
+   HERO SECTION
+   ============================================================ */
+.hero {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 2;
 }
 
 .hero-info {
-    position: absolute;
-    left: 5%;
+  position: absolute;
+  left: 5%;
 }
 
-.hero-info .hero-info-title {
-    color: #727fde;
-    padding: 8px 5px;
-    border: 1px solid #727fde77;
-    width: 260px;
-    background-color: #2200493d;
-    box-shadow: 0 0 5px #727fde88;
-    border-radius: 50px;
+.hero-info-title {
+  color: var(--color-accent);
+  padding: 8px 5px;
+  border: 1px solid #727fde77;
+  width: 260px;
+  background-color: #2200493d;
+  box-shadow: 0 0 5px #727fde88;
+  border-radius: 50px;
 }
 
-
-#typewriter-p,
-{
-    font-family: 'Courier New', Courier, monospace;
+/* Typewriter paragraph uses the same font as the rest of the page */
+#typewriter-p {
+  font-family: inherit;
 }
 
 .typing-active::after {
-    content: '|';
-    animation: blink 0.7s infinite;
+  content: '|';
+  animation: blink 0.7s infinite;
 }
 
 @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0; }
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
 }
 
 .hero-info h1 {
-    font-size: 60px;
-    max-width: 600px;
-    font-weight: 700;
-    line-height: 70px;
-    margin-top: 40px;
-    margin-bottom: 30px;
+  font-size: 60px;
+  max-width: 600px;
+  font-weight: 700;
+  line-height: 70px;
+  margin-top: 40px;
+  margin-bottom: 30px;
 }
 
 .hero-info p {
-    max-width: 550px;
-    line-height: 25px;
-    margin-bottom: 40px;
-    font-size: 20px;
+  max-width: 550px;
+  line-height: 25px;
+  margin-bottom: 40px;
+  font-size: 20px;
 }
 
 .hero-info button {
-    color: white;
-    padding: 15px 35px;
-    border-radius: 10px;
-    border: 1px solid #727fdeb4;
-    background-color: #2200493d;
-    box-shadow: 0 0 5px #727fde86;
-    cursor: pointer;
-    transition: 0.3s;
+  color: white;
+  padding: 15px 35px;
+  border-radius: 10px;
+  border: 1px solid #727fdeb4;
+  background-color: #2200493d;
+  box-shadow: 0 0 5px #727fde86;
+  cursor: pointer;
+  transition: box-shadow 0.3s ease;
 }
 
 .hero-info button:hover {
-    box-shadow: 0 0 15px #727fde86;
+  box-shadow: 0 0 15px #727fde86;
 }
 
-/*Gradient Animation*/
+
+/* ============================================================
+   GRADIENT TEXT ANIMATION
+   Fixed: stray "." before @keyframes removed (was ". @keyframes")
+   ============================================================ */
 .gradient {
-    background: linear-gradient(to right, #008baa, #7e42a7, #6600c5, #6070fd, #2a46ff, #0099ff, #008ead);
-    background-size: 200%;
-    background-clip: text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: animate-gradient 2.5s linear infinite;
+  background: var(--gradient-brand);
+  background-size: 200%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: animate-gradient 2.5s linear infinite;
 }
 
-/*Hero Video*/
+@keyframes animate-gradient {
+  to { background-position: 200%; }
+}
+
+
+/* ============================================================
+   HERO VIDEO BOX
+   ============================================================ */
 .hero-vid-box {
-    position: absolute;
-    right: 0%;
-    z-index: 3;
+  position: absolute;
+  right: 0;
+  z-index: 3;
 }
 
 .hero-vid-box video {
-    width: 520px;
-    height: 520px;
-    object-fit: cover;
-    opacity: 0.5;
-    /*filter: blur(0.3px) saturate(1.1);*/
-
-    mix-blend-mode: lighten;
-    -webkit-mask-image: radial-gradient(circle at center, #000 60%, transparent 75%);
-    mask-image: radial-gradient(circle at center, #000 60%, transparent 75%);
-
+  width: 520px;
+  height: 520px;
+  object-fit: cover;
+  opacity: 0.5;
+  mix-blend-mode: lighten;
+  -webkit-mask-image: radial-gradient(circle at center, #000 60%, transparent 75%);
+  mask-image: radial-gradient(circle at center, #000 60%, transparent 75%);
 }
 
-/*Scroll-down button*/
+/* ── Hero parallax ────────────────────────────────────────────
+   Translates the hero video slightly as the user scrolls,
+   creating a gentle depth effect. @supports ensures it
+   gracefully degrades in non-supporting browsers. */
+@supports (animation-timeline: scroll()) {
+  .hero-vid-box {
+    animation: hero-parallax linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0% 50vh;
+  }
+
+  @keyframes hero-parallax {
+    to { transform: translateY(60px); }
+  }
+}
+
+
+/* ============================================================
+   SCROLL-DOWN INDICATOR
+   ============================================================ */
 .scroll-down {
-    height: 50px;
-    width: 30px;
-    border: 2px solid lightgray;
-    position: absolute;
-    left: 49%;
-    bottom: 8%;
-    border-radius: 50px;
-    cursor: pointer;
-    box-shadow: 0 0 15px rgba(211, 211, 211, 0.477);
+  height: 50px;
+  width: 30px;
+  border: 2px solid var(--color-text);
+  position: absolute;
+  left: 49%;
+  bottom: 8%;
+  border-radius: 50px;
+  cursor: pointer;
+  box-shadow: 0 0 15px rgba(211, 211, 211, 0.477);
 }
 
 .scroll-down::before,
 .scroll-down::after {
-    content: "";
-    position: absolute;
-    top: 20%;
-    left: 50%;
-    height: 10px;
-    width: 10px;
-    border: 2px solid lightgray;
-    transform: translate(-50%, -100%) rotate(45deg);
-    border-top: transparent;
-    border-left: transparent;
-    animation: scroll-down 2s ease-in-out infinite;
+  content: "";
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  height: 10px;
+  width: 10px;
+  border: 2px solid var(--color-text);
+  transform: translate(-50%, -100%) rotate(45deg);
+  border-top: transparent;
+  border-left: transparent;
+  animation: scroll-indicator 2s ease-in-out infinite;
 }
 
 .scroll-down::before {
-    top: 30%;
-    animation-delay: 0.5s;
+  top: 30%;
+  animation-delay: 0.5s;
 }
 
-@keyframes scroll-down {
-    0% {
-        opacity: 0;
-    }
-
-    30%,
-    60% {
-        opacity: 1;
-    }
-
-    100% {
-        top: 90%;
-        opacity: 0;
-    }
+@keyframes scroll-indicator {
+  0%       { opacity: 0; }
+  30%, 60% { opacity: 1; }
+  100%     { top: 90%; opacity: 0; }
 }
 
-/*Info Section*/
 
+/* ============================================================
+   ABOUT SECTION — INFO CARDS
+   ============================================================ */
 .info-section {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 80%;
-    margin-top: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 80%;
+  margin-top: 100px;
 }
 
 .section-title {
-    font-size: 40px;
-    font-weight: 700;
+  font-size: 40px;
+  font-weight: 700;
 }
 
 .info-cards {
-    display: grid;
-    grid-template-columns: auto auto auto;
-    gap: 20px;
-    width: 100%;
-    height: 100%;
-    margin-top: 30px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  width: 100%;
+  margin-top: 30px;
 }
 
+/* ── Cursor glow effect ───────────────────────────────────────
+   .card background uses --mouse-x / --mouse-y custom props.
+   JS writes real values on mousemove; defaults put the circle
+   off-screen (-200%) so it's invisible before hover.
+   This approach avoids z-index conflicts with absolute-positioned
+   card children. */
 .card {
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    position: relative;
-    width: auto;
-    height: 40vh;
-    overflow: hidden;
-    border: 1px solid gray;
-    background-color: #080020b7;
-    border-radius: 20px;
-    transition: 0.3s;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  position: relative;
+  width: auto;
+  height: 40vh;
+  overflow: hidden;
+  border: 1px solid gray;
+  border-radius: 20px;
+  background:
+    radial-gradient(
+      circle 250px at calc(var(--mouse-x, -200) * 1%) calc(var(--mouse-y, -200) * 1%),
+      rgba(114, 127, 222, 0.22),
+      transparent 70%
+    ),
+    var(--color-bg-card);
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 .card:hover {
-    box-shadow: 0 0 15px rgba(211, 211, 211, 0.5);
+  box-shadow: 0 0 20px rgba(114, 127, 222, 0.3);
+  border-color: rgba(114, 127, 222, 0.4);
 }
 
 .card img {
-    width: 80%;
-    height: 50%;
-    object-fit: contain;
+  width: 80%;
+  height: 50%;
+  object-fit: contain;
 }
 
-.card h1 {
-    position: absolute;
-    margin: 0;
-    bottom: 35%;
-    left: 5%;
-    font-size: 25px;
-    z-index: 1;
-    color: lightgray;
-
+/* h1→h3: heading level corrected; z-index stays above any pseudo layers */
+.card h3 {
+  position: absolute;
+  margin: 0;
+  bottom: 35%;
+  left: 5%;
+  font-size: 25px;
+  z-index: 2;
+  color: var(--color-text);
 }
 
 .card p {
-    position: absolute;
-    bottom: 3%;
-    left: 5%;
-    z-index: 1;
-    max-width: 300px;
-    color: gray;
-    font-size: 13px;
-    line-height: 20px;
+  position: absolute;
+  bottom: 3%;
+  left: 5%;
+  z-index: 2;
+  max-width: 300px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.card img,
+.card video {
+  position: relative;
+  z-index: 1;
 }
 
 .card video {
-    display: block;
-    margin: 10% auto 0;
-    width: 70%;
-    max-width: 100%;
-    height: 50%;
-    object-fit: cover;
-    mix-blend-mode: lighten;
+  display: block;
+  margin: 10% auto 0;
+  width: 75%;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  mix-blend-mode: lighten;
 }
 
 .card button {
-    color: white;
-    padding: 10px 20px;
-    border-radius: 10px;
-    border: 1px solid #727fdeb4;
-    background-color: #2200493d;
-    box-shadow: 0 0 5px #727fde86;
-    cursor: pointer;
-    transition: 0.3s;
-    position: absolute;
-    bottom: 5%;
-    left: 5%;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: 1px solid #727fdeb4;
+  background-color: #2200493d;
+  box-shadow: 0 0 5px #727fde86;
+  cursor: pointer;
+  transition: box-shadow 0.3s ease, opacity 0.3s ease;
+  position: absolute;
+  bottom: 5%;
+  left: 5%;
+  z-index: 2;
 }
 
 .card button:hover {
-    box-shadow: 0 0 15px #727fde86;
-    opacity: 0.7;
+  box-shadow: 0 0 15px #727fde86;
+  opacity: 0.7;
 }
 
+/* Grid layout overrides for specific cards */
 .card:nth-child(3) {
-    grid-row: span 2;
-    height: 83vh;
+  grid-row: span 2;
+  height: 83vh;
 }
 
-.card:nth-child(3) p {
-    bottom: 12%;
-}
+.card:nth-child(3) p     { bottom: 12%; }
+.card:nth-child(3) h3    { bottom: 21%; }
+.card:nth-child(1) h3    { margin-bottom: 20px; }
+.card:nth-child(4)       { grid-column: span 2; }
+.card:nth-child(4) p     { max-width: 650px; }
+.card:nth-child(4) h3    { bottom: 35%; }
 
-.card:nth-child(1) h1 {
-    margin-bottom: 20px;
-}
 
-.card:nth-child(3) h1 {
-    bottom: 21%;
-}
-
-.card:nth-child(4) {
-    grid-column: span 2;
-}
-
-.card:nth-child(4) p {
-    max-width: 650px;
-}
-
-.card:nth-child(4) h1 {
-    bottom: 35%;
-}
-
-/*My Projects*/
-.project-list {
-    display: flex;
-    flex-direction: column;
-    gap: 80px;
-    width: 100%;
-}
-
+/* ============================================================
+   PROJECTS SECTION
+   ============================================================ */
 .my-projects {
-    display: flex;
-    flex-direction: column;
-    gap: 80px;
-    align-items: center;
-    position: relative;
-    width: 80%;
-    margin-top: 200px;
-    margin-bottom: 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 80px;
+  align-items: center;
+  position: relative;
+  width: 80%;
+  margin-top: 200px;
+  margin-bottom: 100px;
 }
 
+.project-list {
+  display: flex;
+  flex-direction: column;
+  gap: 80px;
+  width: 100%;
+}
+
+/* ── Project card entrance animation ─────────────────────────
+   Cards start translated down and invisible.
+   JS IntersectionObserver adds .card-visible when they enter
+   the viewport, triggering the transition. */
 .project-card {
-    display: flex;
-    width: 100%;
-    height: 40%;
-    align-items: center;
-    gap: 10%;
-    justify-content: center;
-    height: auto;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10%;
+  justify-content: center;
+  height: auto;
+  opacity: 0;
+  transform: translateY(30px);
+  transition:
+    opacity  0.7s var(--ease-spring),
+    transform 0.7s var(--ease-spring);
 }
 
+.project-card.card-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── Project video box ────────────────────────────────────────
+   will-change: transform hints the browser to promote this
+   element to its own GPU compositor layer — keeps 3D tilt
+   at 60 fps without triggering layout recalculations. */
 .project-vidbox {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 50%;
-    position: relative;
-    cursor: pointer;
-    min-width: 400px;
-    transition: 0.5s;
-    mix-blend-mode: exclusion;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50%;
+  position: relative;
+  cursor: pointer;
+  min-width: 400px;
+  will-change: transform;
+  transform: perspective(900px);
 }
 
 .project-vidbox iframe {
-    width: 100%;
-    height: auto;
-    box-shadow: 0 0 10px lightgray;
-    border-radius: 20px;
-    transition: 0.5s;
-    display: block;
-    aspect-ratio: 16/9;
+  width: 100%;
+  height: auto;
+  box-shadow: 0 0 10px var(--color-text);
+  border-radius: 20px;
+  display: block;
+  aspect-ratio: 16 / 9;
+  transition: box-shadow 0.5s ease;
 }
 
 .project-vidbox iframe:hover {
-    box-shadow: 0 0 20px lightgray;
+  box-shadow: 0 0 20px var(--color-text);
+}
 
-}
-.project-vidbox.reel {
-    width: 25%;
-    min-width: 180px;
-}
-.project-vidbox.reel iframe{
-    aspect-ratio: 9/16;
-}
+.project-vidbox.reel         { width: 25%; min-width: 180px; }
+.project-vidbox.reel iframe  { aspect-ratio: 9 / 16; }
 
 .project-info {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: center;
-    width: 50%;
-    padding-left: 10%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  width: 50%;
+  padding-left: 10%;
 }
 
-.project-info h1 {
-    width: 90%;
-    font-size: 25px;
-    font-weight: bold;
-    text-wrap: wrap;
-    margin-bottom: 10px;
-    margin-top: 0;
-    max-width: 450px;
+/* h1→h3: heading level corrected */
+.project-info h3 {
+  width: 90%;
+  font-size: 25px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  margin-top: 0;
+  max-width: 450px;
 }
 
 .project-info p {
-    width: 90%;
-    max-width: 450px;
-    margin-bottom: 0;
-    margin-top: 0;
+  width: 90%;
+  max-width: 450px;
+  margin-bottom: 0;
+  margin-top: 0;
 }
 
 .hover-sign {
-    position: absolute;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 30%;
-    height: 100px;
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30%;
+  height: 100px;
 }
 
 .hover-sign::before,
 .hover-sign::after {
-    content: "👆";
-    text-align: center;
-    position: absolute;
-    font-size: 50px;
-    top: 20%;
-    left: 40%;
-    border-radius: 50%;
-    animation: hoverAnimation 3s ease-in-out infinite;
-
+  content: "👆";
+  text-align: center;
+  position: absolute;
+  font-size: 50px;
+  top: 20%;
+  left: 40%;
+  border-radius: 50%;
+  /* Fixed: translate(80%, 50%) — translateX takes only one value */
+  animation: hoverAnimation 3s ease-in-out infinite;
 }
-
-
-
-
-
 
 @keyframes hoverAnimation {
-    0% {
-        box-shadow: 0 0 5px lightgray;
-        transform: translate(100%, 50%) rotate(30deg);
-    }
-
-    100% {
-        box-shadow: 0 0 15px lightgray;
-        transform: translateX(80%, 50%) rotate(0deg);
-
-    }
+  0%   { transform: translate(100%, 50%) rotate(30deg); }
+  100% { transform: translate(80%, 50%) rotate(0deg); }
 }
 
-.hover-sign.active {
-    display: none;
+.hover-sign.active { display: none; }
+
+
+/* ============================================================
+   WORD-BY-WORD REVEAL
+   JS splits target headings into <span class="word"> elements
+   and sets --word-index on each. Adding .revealed triggers
+   the staggered transition via transition-delay.
+   ============================================================ */
+.word {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  /* Stagger: each word delays by its sequential index × 55ms */
+  transition-delay: calc(var(--word-index, 0) * 0.055s);
 }
 
-/* Skills Section*/
+.word.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+
+/* ============================================================
+   SKILLS SECTION
+   ============================================================ */
 .skills-section {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
 }
 
 .skills-box {
-    width: 100%;
-    height: 90vh;
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    mix-blend-mode: normal;
-    opacity: 0.7;
+  width: 100%;
+  height: 90vh;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
 }
 
-
 .skills-image {
-    width: 50%;
-    mix-blend-mode: lighten;
-    opacity: 0.7;
-
+  width: 50%;
+  mix-blend-mode: lighten;
+  opacity: 0.7;
 }
 
 .designer {
-    position: absolute;
-    display: flex;
-    flex-direction: column;
-    align-items: start;
-    top: 25%;
-    left: 5%;
-    max-width: 300px;
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  top: 25%;
+  left: 5%;
+  max-width: 300px;
 }
 
 .photographer {
-    position: absolute;
-    display: flex;
-    flex-direction: column;
-    align-items: start;
-    top: 25%;
-    right: 5%;
-    max-width: 300px;
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  top: 25%;
+  right: 5%;
+  max-width: 300px;
 }
 
-.skills-box h1 {
-    font-size: 50px;
-    display: flex;
-    align-items: center;
+/* h1→h3: heading level corrected */
+.skills-box h3 {
+  font-size: 50px;
+  display: flex;
+  align-items: center;
 }
 
-/*SLIDER*/
+
+/* ============================================================
+   TOOL LOGO SLIDER (infinite scroll carousel)
+   ============================================================ */
 .slider {
-    --duration: 10s;
-    position: absolute;
-    bottom: 1%;
-    right: 20%;
-    width: 60%;
-    height: calc(var(--height) + 50px);
-    padding-top: 50px;
-    overflow: hidden;
-    mask-image: linear-gradient(to right,
-            transparent,
-            #000 10% 90%,
-            transparent);
-    mix-blend-mode: difference;
-    opacity: 0.8;
+  --duration: 10s;
+  position: absolute;
+  bottom: 1%;
+  right: 20%;
+  width: 60%;
+  height: calc(var(--height) + 50px);
+  padding-top: 50px;
+  overflow: hidden;
+  mask-image: linear-gradient(to right, transparent, #000 10% 90%, transparent);
+  mix-blend-mode: difference;
+  opacity: 0.8;
 }
 
 .slider .list {
-    display: flex;
-    width: 100%;
-    min-width: calc(var(--width)* var(--quantity));
-    position: relative;
+  display: flex;
+  width: 100%;
+  min-width: calc(var(--width) * var(--quantity));
+  position: relative;
 }
 
 .slider .list .item {
-    width: var(--width);
-    height: var(--height);
-    position: absolute;
-    left: 100%;
-    animation: autoRun var(--duration) linear infinite;
-    transition: filter 0.5s, transform 0.3s ease;
-    animation-delay: calc(var(--duration) / var(--quantity) * (var(--position) - 1) - var(--duration));
+  width: var(--width);
+  height: var(--height);
+  position: absolute;
+  left: 100%;
+  animation: autoRun var(--duration) linear infinite;
+  transition: filter 0.5s ease, transform 0.3s ease;
+  animation-delay: calc(var(--duration) / var(--quantity) * (var(--position) - 1) - var(--duration));
 }
 
-.slider .list .item img {
-    width: 100%;
-}
-
+.slider .list .item img { width: 100%; }
 
 @keyframes autoRun {
-    from {
-        left: 100%;
-    }
-
-    to {
-        left: calc(var(--width) * -1);
-    }
+  from { left: 100%; }
+  to   { left: calc(var(--width) * -1); }
 }
 
-.slider:hover .item {
-    animation-play-state: paused !important;
-    filter: blur(3px);
-}
+.slider:hover .item              { animation-play-state: paused !important; filter: blur(3px); }
+.slider .item:hover              { filter: blur(0); transform: scale(1.2) translateY(-12px); transform-origin: bottom center; z-index: 10; }
 
-.slider .item:hover {
-    filter: blur(0);
-    transform: scale(1.2) translateY(-12px);
-    transform-origin: bottom center;
-    z-index: 10;
-}
 
-/* =============================================
-   EXPERIENCE SECTION
-   ============================================= */
-
-/*
-  The section itself needs a gradient background so
-  the glass cards have something colorful to blur behind them.
-  Without this, backdrop-filter blurs nothing visible.
-  
-  We match your existing color palette:
-  - #727fde (your blue-purple accent)
-  - #6600c5 (your gradient purple)
-  - background dark base matches your existing .card bg
-*/
+/* ============================================================
+   EXPERIENCE SECTION — TIMELINE
+   ============================================================ */
 .experience-section {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 80%;
-    margin-top: 100px;
-    margin-bottom: 100px;
-    padding: 60px 40px;
-    font-family: 'Montserrat', sans-serif;
-    border-radius: 30px;
-    position: relative;
-    background-color: #080020b7;
-    font-family: Arial, Helvetica, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 80%;
+  margin-top: 100px;
+  margin-bottom: 100px;
+  padding: 60px 40px;
+  border-radius: 30px;
+  position: relative;
+  background-color: var(--color-bg-card);
+  font-family: 'Montserrat', Arial, Helvetica, sans-serif;
 }
-
-
-/* =============================================
-   TIMELINE CONTAINER
-   The vertical line is drawn entirely in CSS
-   using ::before (the gray track) and
-   ::after (the colored fill that animates)
-   ============================================= */
 
 .timeline-container {
-    position: relative;
-    padding-left: 2.5rem;
-    /* space for the line on the left */
-    width: 100%;
-    max-width: 800px;
+  position: relative;
+  padding-left: 2.5rem;
+  width: 100%;
+  max-width: 800px;
 }
 
-/* The static gray track line */
+/* Static grey track line */
 .timeline-container::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 3px;
+  height: 100%;
+  background: rgba(114, 127, 222, 0.2);
+  border-radius: 999px;
+}
+
+/* Animated colour fill — grows as the user scrolls the page.
+   Wrapped in @supports so older browsers just see the grey track. */
+@supports (animation-timeline: scroll()) {
+  .timeline-container::after {
     content: '';
     position: absolute;
     left: 0;
     top: 0;
     width: 3px;
     height: 100%;
-    background: rgba(114, 127, 222, 0.2);
-    /* your accent color, faint */
     border-radius: 999px;
+    background: linear-gradient(to bottom, #727fde, #6600c5, #2a46ff);
+    transform-origin: top;
+    transform: scaleY(0);
+    animation: fill-timeline linear both;
+    animation-timeline: scroll(root);
+  }
+
+  @keyframes fill-timeline {
+    from { transform: scaleY(0); }
+    to   { transform: scaleY(1); }
+  }
 }
-
-/*
-  The animated color fill.
-  
-  Key concept: the line is always full height (height: 100%).
-  We start it visually invisible by squishing it: scaleY(0).
-  transform-origin: top means it grows DOWNWARD from the top.
-  The scroll animation drives scaleY from 0 → 1 as you scroll.
-  
-  @supports wrapper: only browsers that understand
-  animation-timeline: scroll() will get this animation.
-  Older browsers just see the gray track — that's fine.
-*/
-@supports (animation-timeline: scroll()) {
-    .timeline-container::after {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 3px;
-        height: 100%;
-        border-radius: 999px;
-
-        /* Your existing gradient colors */
-        background: linear-gradient(to bottom, #727fde, #6600c5, #2a46ff);
-
-        transform-origin: top;
-        transform: scaleY(0);
-        /* start invisible */
-
-        animation: fill-timeline linear both;
-        animation-timeline: scroll(root);
-        /* linked to page scroll */
-    }
-
-    @keyframes fill-timeline {
-        from {
-            transform: scaleY(0);
-        }
-
-        to {
-            transform: scaleY(1);
-        }
-    }
-}
-
-
-/* =============================================
-   TIMELINE DOT
-   The circle marker that sits on the line
-   for each job card
-   ============================================= */
 
 .timeline-dot {
-    display: none;
-    position: absolute;
-
-    /*
-    We place the dot on the line.
-    The container has padding-left: 2.5rem.
-    The line is at left: 0.
-    So we push the dot left to overlap the line.
-    -2.5rem + half the dot width (8px) centers it on the line.
-  */
-    left: -2.1rem;
-    top: 1.8rem;
-
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: #727fde;
-    border: 2px solid #6600c5;
-    box-shadow: 0 0 8px #727fde88;
-    z-index: 1;
+  display: none;
+  position: absolute;
+  left: -2.1rem;
+  top: 1.8rem;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  border: 2px solid var(--color-accent-dark);
+  box-shadow: 0 0 8px #727fde88;
+  z-index: 1;
 }
 
-
-/* =============================================
-   JOB CARD — GLASSMORPHISM
-   ============================================= */
-
+/* ── Cursor glow on job cards ─────────────────────────────────
+   Same technique as .card — background gradient follows the
+   mouse via --mouse-x / --mouse-y. */
 .job-card {
-    position: relative;
-    /* needed so .timeline-dot positions against this */
-    margin-bottom: 2.5rem;
-    padding: 1.8rem 2rem;
-    border-radius: 20px;
-
-    /*
-    Glassmorphism recipe:
-    1. Very low-opacity white background (you see the gradient through it)
-    2. backdrop-filter blurs what's behind the card
-    3. Subtle white border gives the "glass edge" effect
-  */
-    background: #080020b7;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-
-    transition: border-color 0.3s, box-shadow 0.3s;
+  position: relative;
+  margin-bottom: 2.5rem;
+  padding: 1.8rem 2rem;
+  border-radius: 20px;
+  background:
+    radial-gradient(
+      circle 280px at calc(var(--mouse-x, -200) * 1%) calc(var(--mouse-y, -200) * 1%),
+      rgba(114, 127, 222, 0.15),
+      transparent 65%
+    ),
+    var(--color-bg-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .job-card:hover {
-    border-color: rgba(255, 255, 255, 0.2);
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.06);
+  border-color: rgba(114, 127, 222, 0.3);
+  box-shadow: 0 0 20px rgba(114, 127, 222, 0.1);
 }
-
-
-/* =============================================
-   JOB HEADER — title, company, date, location
-   ============================================= */
 
 .job-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    flex-wrap: wrap;
-    /* wraps on smaller screens */
-    gap: 0.5rem;
-    margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
 }
 
+/* .job-title class is on h3 now (was h2) — no selector change needed (class-based) */
 .job-title {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: lightgray;
-    margin: 0 0 0.25rem 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 0.25rem 0;
 }
 
 .job-company {
-    font-size: 0.9rem;
-    color: #727fde;
-    /* your accent */
-    font-weight: 600;
-    display: block;
+  font-size: 0.9rem;
+  color: var(--color-accent);
+  font-weight: 600;
+  display: block;
 }
 
 .job-meta {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2rem;
 }
 
 .job-date,
 .job-location {
-    font-size: 0.8rem;
-    color: gray;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
 }
 
+.job-details { margin-top: 0.5rem; }
 
-/* =============================================
-   DETAILS / SUMMARY — Native HTML Accordion
-   
-   No JavaScript at all.
-   <details> is hidden by default.
-   <summary> is always visible and acts as the toggle.
-   The [open] selector targets the open state.
-   ============================================= */
-
-.job-details {
-    margin-top: 0.5rem;
-}
-
-/*
-  <summary> has a default browser arrow marker.
-  list-style: none removes it so we can use our own.
-*/
 .job-summary {
-    list-style: none;
-    cursor: pointer;
-    font-size: 0.85rem;
-    color: #727fde;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    width: fit-content;
-    transition: color 0.2s;
+  list-style: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--color-accent);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: fit-content;
+  transition: color 0.2s ease;
 }
 
-/* Remove the default arrow in webkit browsers (Chrome, Safari) */
-.job-summary::-webkit-details-marker {
-    display: none;
-}
+.job-summary::-webkit-details-marker { display: none; }
 
-/* Our custom arrow — rotates when open */
 .job-summary::before {
-    content: '▸';
-    display: inline-block;
-    transition: transform 0.25s ease;
+  content: '▸';
+  display: inline-block;
+  transition: transform 0.25s ease;
 }
 
-/* When <details> is open, rotate the arrow */
-.job-details[open] .job-summary::before {
-    transform: rotate(90deg);
-}
-
-.job-summary:hover {
-    color: #a0aaff;
-}
+.job-details[open] .job-summary::before { transform: rotate(90deg); }
+.job-summary:hover { color: #a0aaff; }
 
 .job-bullets {
-    margin: 1rem 0 0 0;
-    padding-left: 1.2rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+  margin: 1rem 0 0 0;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .job-bullets li {
-    font-size: 0.875rem;
-    color: white;
-    line-height: 1.6;
-    opacity: 0;
-    transform: translateY(8px);
-    transition: opacity 0.4s ease, transform 0.4s ease;
-    transition-delay: var(--delay, 0s);
-    font-family: "Montserrat", sans-serif;
+  font-size: 0.875rem;
+  color: white;
+  line-height: 1.6;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  transition-delay: var(--delay, 0s);
 }
+
 .job-bullets.is-open li {
-    opacity: 1;
-    transform: translateY(0);
+  opacity: 1;
+  transform: translateY(0);
 }
-
-
-/* =============================================
-   TECH STACK TAGS
-   ============================================= */
 
 .tech-stack {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-top: 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
 }
 
 .tech-stack span {
-    font-size: 0.75rem;
-    font-weight: 600;
-    padding: 0.25rem 0.75rem;
-    border-radius: 6px;
-
-    /* Match your existing button/badge style */
-    background: rgba(114, 127, 222, 0.1);
-    color: #727fde;
-    border: 1px solid rgba(114, 127, 222, 0.3);
-
-    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  background: rgba(114, 127, 222, 0.1);
+  color: var(--color-accent);
+  border: 1px solid rgba(114, 127, 222, 0.3);
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .tech-stack span:hover {
-    background: #727fde;
-    color: #fff;
-    box-shadow: 0 0 10px rgba(114, 127, 222, 0.5);
+  background: var(--color-accent);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(114, 127, 222, 0.5);
 }
 
 
-/* =============================================
-   RESPONSIVE — matches your existing breakpoints
-   ============================================= */
-
-@media screen and (max-width: 700px) {
-    .experience-section {
-        padding: 40px 20px;
-        width: 90%;
-    }
-
-    .job-header {
-        flex-direction: column;
-    }
-
-    .job-meta {
-        align-items: flex-start;
-    }
-
-    .timeline-container {
-        padding-left: 1.5rem;
-    }
-
-    .timeline-dot {
-        left: -1.2rem;
-    }
-}
-
-
-/*Contact Section*/
+/* ============================================================
+   CONTACT SECTION
+   ============================================================ */
 .contact-section {
-    width: 80%;
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    gap: 10%;
-    align-items: center;
-    position: relative;
+  width: 80%;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  gap: 10%;
+  align-items: center;
+  position: relative;
 }
 
-.contact-section h1 {
-    position: absolute;
-    top: 10%;
-    left: 40%;
+/* .section-title selector — corrected from ".contact-section h1" */
+.contact-section .section-title {
+  position: absolute;
+  top: 10%;
+  left: 40%;
 }
 
 .social-box {
-    display: flex;
-    flex-direction: column;
-    gap: 25px;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
 }
 
 .social-box a {
-    color: lightgray;
-    text-decoration: none;
-    font-size: 20px;
-    text-wrap: nowrap;
+  color: var(--color-text);
+  text-decoration: none;
+  font-size: 20px;
+  white-space: nowrap;
 }
 
 .social-box i {
-    color: #727fde;
-    font-size: 30px;
-    margin-right: 10px;
+  color: var(--color-accent);
+  font-size: 30px;
+  margin-right: 10px;
 }
 
 .social-icons a i {
-    color: white;
-    margin-top: 40px;
+  color: white;
+  margin-top: 40px;
+}
+
+/* ── Form labels ──────────────────────────────────────────────
+   Labels were <p> tags in the original — now proper <label>
+   elements linked to their inputs via for/id. */
+.contact-box label {
+  display: block;
+  color: var(--color-text);
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-top: 16px;
+  margin-bottom: 4px;
+}
+
+.contact-box label:first-of-type {
+  margin-top: 0;
 }
 
 .contact-box p {
-    max-width: 400px;
-    margin-top: 30px;
-    margin-bottom: 5px;
-
+  max-width: 400px;
+  margin-top: 0;
+  margin-bottom: 16px;
 }
 
 .contact-box input {
-    padding: 7.5px 30px;
-    background-color: lightgray;
-    width: 80%;
-    height: 20px;
-    border: none;
-    outline: none;
-    border-top-right-radius: 10px;
-    border-bottom-right-radius: 10px;
+  padding: 7.5px 30px;
+  background-color: lightgray;
+  width: 80%;
+  height: 36px;
+  border: none;
+  outline: none;
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+  font-family: inherit;
+  font-size: 0.875rem;
 }
 
 .contact-box button {
-    margin-top: 30px;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 10px;
-    border: 1px solid #727fdeb4;
-    background-color: #2200493d;
-    box-shadow: 0 0 5px #727fde86;
-    cursor: pointer;
-    transition: 0.3s;
-
+  margin-top: 20px;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: 1px solid #727fdeb4;
+  background-color: #2200493d;
+  box-shadow: 0 0 5px #727fde86;
+  cursor: pointer;
+  transition: box-shadow 0.3s ease, opacity 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: inherit;
 }
 
+/* Fixed: was "opacity: o.7" (letter o instead of zero) */
 .contact-box button:hover {
-    box-shadow: 0 0 15px #727fde86;
-    opacity: o.7
+  box-shadow: 0 0 15px #727fde86;
+  opacity: 0.7;
 }
 
-/*Footer*/
+/* Disabled state shown during form submission */
+#form-submit-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ── Form status message ──────────────────────────────────────
+   Injected by JS after submit. aria-live="polite" on the element
+   means screen readers announce changes automatically.
+   view-transition-name enables smooth View Transition morphing. */
+.form-status {
+  margin-top: 12px;
+  font-size: 0.875rem;
+  min-height: 1.4em;
+  view-transition-name: form-status;
+  transition: opacity 0.2s ease;
+}
+
+.form-status.success { color: #4ade80; }
+.form-status.error   { color: #f87171; }
+
+
+/* ============================================================
+   FOOTER
+   Fixed multiple bugs:
+   ── backdrop-filter (was background-filter — invalid property)
+   ── box-shadow: 0 0 15px (was missing "px")
+   ── z-index moved to its own declaration (was inside box-shadow)
+   ── gap: 5px (was "5 px" with a space — invalid)
+   ── footer h1 → footer p (heading level corrected)
+   ============================================================ */
 footer {
-    display: flex;
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    left: 0;
-    align-items: center;
-    justify-content: center;
-    height: 40px;
-    background-color: rgba(255, 255, 255, 0.128);
-    background-filter: blur(10px);
-    box-shadow: 0 0 15 rgba(255, 255, 255, 0.356) z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 50px;
+  background-color: rgba(255, 255, 255, 0.128);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.356);
+  z-index: 999;
+  position: relative;
 }
 
 footer h1 {
-    font-size: 15px;
+  font-size: 15px;
 }
 
-/*Review*/
 footer .box-icons {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5 px;
-
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
 }
 
-footer .box-icons p i {
-    color: white;
-    margin-left: 10px;
+footer .box-icons p i,
+footer .box-icons a i {
+  color: white;
+  margin-left: 10px;
 }
 
-/* Blur Effect Animation*/
+
+/* ============================================================
+   SCROLL-DRIVEN ANIMATIONS
+
+   @supports (animation-timeline: view()) wraps all three so
+   elements stay fully visible in browsers without support —
+   no hidden or blurred content as a fallback.
+   ============================================================ */
+
+/* Fallback: if scroll-driven animations aren't supported,
+   ensure all animated elements are fully visible */
+@supports not (animation-timeline: view()) {
+  .autoBlur,
+  .autoDisplay,
+  .fadeInRight,
+  .fadein-left {
+    animation: none;
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+}
 
 .autoBlur {
-    animation: autoBlurAnimation 1.2s linear both;
-    animation-timeline: view();
+  animation: autoBlurAnimation 1.2s linear both;
+  animation-timeline: view();
 }
 
 @keyframes autoBlurAnimation {
-    0% {
-        filter: blur(40px);
-        opacity: 0;
-    }
-
-    35%,
-    65% {
-        filter: blur(0);
-        opacity: 1;
-    }
-
-    100% {
-        filter: blur(40px);
-        opacity: 0;
-    }
+  0%       { filter: blur(40px); opacity: 0; }
+  35%, 65% { filter: blur(0);    opacity: 1; }
+  100%     { filter: blur(40px); opacity: 0; }
 }
 
-/*AUTO DISPLAY ANIMATION */
-
 .autoDisplay {
-    animation: autoDisplayAnimation both;
-    animation-timeline: view();
+  animation: autoDisplayAnimation both;
+  animation-timeline: view();
 }
 
 @keyframes autoDisplayAnimation {
-    from {
-        filter: blur(10px);
-        transform: translateY(-200px) scale(0);
-        opacity: 0.2;
-    }
-
-    50% {
-        opacity: 1;
-        filter: blur(0);
-        transform: translateX(0) scale(1);
-    }
+  from { filter: blur(10px); transform: translateY(-200px) scale(0); opacity: 0.2; }
+  50%  { opacity: 1; filter: blur(0); transform: translateX(0) scale(1); }
 }
 
-/* FADEIN-RIGHT*/
 .fadeInRight {
-    animation: fadeInAnimation both;
-    animation-timeline: view();
+  animation: fadeInAnimation both;
+  animation-timeline: view();
 }
 
-@keyFrames fadeInAnimation {
-    0% {
-        opacity: 0;
-        transform: translateX(-500px) scale(0.2);
-        filter: blur(20px);
-    }
-
-    35%,
-    65% {
-        opacity: 1;
-        transform: translateX(0px) scale(1);
-        filter: blur(0);
-    }
-
-    100% {
-        filter: blur(20px);
-    }
-
+/* Fixed: @keyFrames (capital F) → @keyframes */
+@keyframes fadeInAnimation {
+  0%       { opacity: 0; transform: translateX(-500px) scale(0.2); filter: blur(20px); }
+  35%, 65% { opacity: 1; transform: translateX(0px) scale(1);      filter: blur(0);   }
+  100%     { filter: blur(20px); }
 }
-
-/* FADEIN_LEFT */
 
 .fadein-left {
-    animation: fadeInLeftAnimation both;
-    animation-timeline: view();
+  animation: fadeInLeftAnimation both;
+  animation-timeline: view();
 }
 
 @keyframes fadeInLeftAnimation {
-    0% {
-        opacity: 0;
-        transform: translateX(-500px) scale(0.2);
-        filter: blur(10px);
-    }
-
-    35%,
-    65% {
-        opacity: 1;
-        transform: translateX(0) scale(1);
-        filter: blur(0px);
-    }
-
-    100% {
-        filter: blur(10px);
-    }
+  0%       { opacity: 0; transform: translateX(-500px) scale(0.2); filter: blur(10px); }
+  35%, 65% { opacity: 1; transform: translateX(0) scale(1);        filter: blur(0);   }
+  100%     { filter: blur(10px); }
 }
 
 
-/* Sidebar */
-
+/* ============================================================
+   MOBILE SIDEBAR
+   ============================================================ */
 .menu-icon {
-    font-size: 35px;
-    cursor: pointer;
-    display: none;
+  font-size: 35px;
+  cursor: pointer;
+  display: none;
+  background: none;
+  border: none;
+  color: var(--color-text);
+  padding: 0;
 }
-
 
 .sidebar {
-    position: fixed;
-    right: 0;
-    top: 0;
-    bottom: 70%;
-    width: 0%;
-    background-color: #000000b8;
-    z-index: 999;
-    box-shadow: 0 0 25px rgba(255, 255, 255, 0.479);
-    backdrop-filter: blur(10px);
-    opacity: 0;
-    border-bottom-left-radius: 100%;
-
+  position: fixed;
+  right: 0;
+  top: 0;
+  bottom: 70%;
+  width: 0;
+  background-color: #000000b8;
+  z-index: 999;
+  box-shadow: 0 0 25px rgba(255, 255, 255, 0.479);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  opacity: 0;
+  border-bottom-left-radius: 100%;
 }
 
 .close-icon {
-    font-size: 50px;
-    color: lightgray;
-    padding-left: 10px;
-    cursor: pointer;
+  font-size: 50px;
+  color: var(--color-text);
+  padding-left: 10px;
+  cursor: pointer;
+  background: none;
+  border: none;
 }
 
 .sidebar ul {
-    padding-left: 20px;
+  padding-left: 20px;
+  margin: 0;
+  list-style: none;
 }
 
-.sidebar ul li {
-    list-style: none;
-    margin-bottom: 30px;
-}
+.sidebar ul li { margin-bottom: 30px; }
 
 .sidebar ul li a {
-    text-decoration: none;
-    color: lightgray;
-    font-size: 30px;
-    font-weight: 900;
-    text-shadow: 0 0 15px #4c4c4c;
+  text-decoration: none;
+  color: var(--color-text);
+  font-size: 30px;
+  font-weight: 900;
+  text-shadow: 0 0 15px #4c4c4c;
 }
 
 .social-sidebar {
-    padding-left: 20px;
-    margin-top: 60px;
-    text-wrap: nowrap;
+  padding-left: 20px;
+  margin-top: 60px;
+  white-space: nowrap;
 }
 
 .social-sidebar a {
-    font-size: 35px;
-    padding: 5px 5px;
-    cursor: pointer;
-    transition: 0.5s;
+  font-size: 35px;
+  padding: 5px;
+  cursor: pointer;
+  transition: color 0.5s ease;
 }
 
-/* Sidebar Open ANimation */
 .sidebar.open-sidebar {
-    animation: openSideBarAnimation 1.5s forwards;
+  animation: openSideBarAnimation 1.5s forwards;
 }
 
 @keyframes openSideBarAnimation {
-    to {
-        width: 80%;
-        opacity: 1;
-        bottom: 0;
-        border-radius: 0;
-    }
+  to { width: 80%; opacity: 1; bottom: 0; border-radius: 0; }
 }
 
-/* Sidebar close ANimation */
-
 .sidebar.close-sidebar {
-    animation: closeSideBarAnimation 1.5s forwards;
+  animation: closeSideBarAnimation 1.5s forwards;
 }
 
 @keyframes closeSideBarAnimation {
-    from {
-        width: 80%;
-        opacity: 1;
-        bottom: 0;
-        border-radius: 0;
-    }
-
-    to {
-        width: 0;
-        opacity: 0;
-        bottom: 70%;
-        border-bottom-left-radius: 50%;
-    }
+  from { width: 80%; opacity: 1; bottom: 0; border-radius: 0; }
+  to   { width: 0; opacity: 0; bottom: 70%; border-bottom-left-radius: 50%; }
 }
 
 
+/* ============================================================
+   VIEW TRANSITIONS
 
+   document.startViewTransition() snapshots the DOM before and
+   after a change, then crossfades. These rules tune the
+   animation timing. The form-status element gets a named
+   transition so it can have its own unique enter/exit.
 
+   @supports wrapper: browsers without View Transitions support
+   just get instant DOM updates — no broken layout.
+   ============================================================ */
+@supports (view-transition-name: none) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.2s;
+    animation-timing-function: ease;
+  }
 
+  ::view-transition-old(form-status) {
+    animation: 0.2s ease both vt-fade-out;
+  }
 
+  ::view-transition-new(form-status) {
+    animation: 0.3s ease both vt-slide-in;
+  }
 
+  @keyframes vt-fade-out {
+    to { opacity: 0; transform: translateY(-4px); }
+  }
 
-
-. @keyframes animate-gradient {
-    to {
-        background-position: 200%;
-    }
-}
-
-@media (max-aspect-ratio: 16/9) {
-    .back-vid {
-        width: auto;
-        height: 100%;
-    }
-}
-
-@media (min-aspect-ratio: 16/9) {
-    .back-vid {
-        width: 100%;
-        height: auto;
-    }
-}
-
-@media (max-aspect-ratio: 16/9) {
-    .back-vid {
-        width: auto;
-        height: 100%;
-    }
-}
-
-@media (min-aspect-ratio: 16/9) {
-    .back-vid {
-        width: 100%;
-        height: auto;
-    }
+  @keyframes vt-slide-in {
+    from { opacity: 0; transform: translateY(6px); }
+  }
 }
 
 
+/* ============================================================
+   @media (prefers-reduced-motion: reduce)
+
+   Disables every animation and transition for users who have
+   enabled the OS-level "reduce motion" setting. Content stays
+   fully visible and usable — nothing is hidden or transformed.
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .autoBlur,
+  .autoDisplay,
+  .fadeInRight,
+  .fadein-left {
+    animation: none;
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+
+  /* Make sure word-reveal words are visible when motion is off */
+  .word {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  /* Make all project cards visible without animation */
+  .project-card {
+    opacity: 1;
+    transform: none;
+  }
+
+  .gradient {
+    animation: none;
+  }
+
+  .slider .list .item {
+    animation: none;
+  }
+
+  .scroll-down,
+  .typing-active::after {
+    animation: none;
+  }
+
+  .progress-bar {
+    animation: none;
+  }
+}
+
+
+/* ============================================================
+   RESPONSIVE — 1200px
+   ============================================================ */
 @media screen and (max-width: 1200px) {
-    .blackhole-box video {
-        margin-top: -20%;
-    }
+  .blackhole-box video { margin-top: -20%; }
 
-    .hero-info h1 {
-        font-size: 40px;
-        max-width: 400px;
-        line-height: 40px;
-    }
+  .hero-info h1 {
+    font-size: 40px;
+    max-width: 400px;
+    line-height: 40px;
+  }
 
-    .hero-info P {
-        max-width: 300px;
-    }
+  .hero-info p { max-width: 300px; }
 
-    .skills-video-box {
-        right: 0%;
-    }
+  .info-cards { grid-template-columns: 1fr 1fr; }
 
-    .skills-video-box video {
-        height: 500px;
-    }
+  .card:nth-child(3) {
+    grid-column: span 2;
+    height: 70vh;
+  }
 
-    .info-cards {
-        grid-template-columns: auto;
-    }
+  /* h1→h3: heading selector corrected */
+  .info-cards .card h3      { font-size: 20px; }
+  .info-cards .card:nth-child(3) h3 { bottom: 25%; }
 
-    .card:nth-child(3) {
-        grid-column: span 2;
-        height: 70vh;
-    }
+  .card video { height: auto; margin-top: 5%; }
 
-    .info-cards .card h1 {
-        font-size: 20px;
-    }
-
-    .info-cards .card:nth-child(3) h1 {
-        bottom: 25%;
-    }
-
-    .card video {
-        height: 60%;
-
-        margin-top: 5%;
-    }
-
-    .my-project {
-        margin-bottom: 200px;
-        scale: 0.8;
-    }
-
-    .contact-section .section-title {
-        left: 30%;
-    }
+  .contact-section .section-title { left: 30%; }
 }
 
+
+/* ============================================================
+   RESPONSIVE — 700px
+   ============================================================ */
 @media screen and (max-width: 700px) {
-    header {
-        position: fixed;
-        height: 50px;
-    }
+  header {
+    position: fixed;
+    height: 50px;
+  }
 
-    header ul {
-        display: none;
-    }
+  header nav  { display: none; }
+  header .box-icons { display: none; }
 
-    header .box-icons {
-        display: none;
-    }
+  .menu-icon { display: inline-flex; }
 
-    .menu-icon {
-        display: inline;
-    }
+  .blackhole-box video { width: 100%; margin-top: -15%; }
 
-    .blackhole-box video {
-        width: 100%;
-        margin-top: -15%;
-    }
+  /* Disable autoBlur on mobile — GPU is weaker, and the blur can cause jank */
+  .autoBlur { animation: none; opacity: 1; filter: none; }
 
-    .autoBlur {
-        animation: none;
-    }
+  .hero { flex-direction: column; top: 0; bottom: 0; left: 0; right: 0; }
+  .hero-info { bottom: 5%; }
+  .scroll-down { bottom: 5%; }
 
-    .hero {
-        flex-direction: column;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        right: 0;
+  .info-cards { grid-template-columns: 1fr; }
 
-    }
+  .card:nth-child(3) {
+    grid-column: span 1;
+    height: 70vh;
+  }
 
-    .hero-info {
-        bottom: 5%;
-    }
+  .card video { width: 100%; }
 
-    .scroll-down {
-        bottom: 5%;
-    }
+  .container { height: 100%; }
 
-    .hero .skills-video-box {
-        height: 200px;
-        top: 5%;
-    }
+  /* Removed negative margins — use proper flex stacking instead */
+  .project-card {
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
 
+  .project-vidbox {
+    width: 100%;
+    min-width: 0;
+  }
 
+  .project-info {
+    width: 100%;
+    padding-left: 0;
+    overflow: visible;
+  }
 
-    .info-cards {
-        grid-template-columns: auto;
-    }
+  /* h1→h3: heading selector corrected */
+  .project-info h3 {
+    font-size: 18px;
+    max-width: 100%;
+    white-space: normal;
+  }
 
-    .card:nth-child(3) {
-        grid-column: span 2;
-        height: 70vh;
-    }
+  .project-info p {
+    font-size: 14px;
+    max-width: 100%;
+    min-width: 0;
+  }
 
-    .card video {
-        width: 100%;
-    }
+  /* Fixed: .Designer (capital D) never matched — corrected to .designer */
+  .designer {
+    top: 15%;
+    left: 18%;
+  }
 
-    .container {
-        height: 100%;
-    }
+  /* Fixed: .Designer h1 → .designer h3 */
+  .designer h3 {
+    margin-bottom: 0;
+    margin-top: 70px;
+  }
 
-    .project-vidbox video {
-        width: 250px;
-        margin-left: -100px;
-    }
+  /* Dead .coder rules removed — no element has that class; .photographer is the correct one */
+  .photographer {
+    top: 50%;
+    left: 18%;
+  }
 
-    .project-info {
-        overflow: hidden;
-        padding-left: 0;
-        margin-left: -70px;
-    }
+  .photographer h3 { margin-bottom: 0; }
 
-    .project-info h1 {
-        font-size: 20px;
-        max-width: 200px;
-        text-wrap: wrap;
-    }
+  .slider .list .item img { width: 70%; }
 
-    .project-info p {
-        font-size: 10px;
-        text-wrap: wrap;
-        max-width: 200px;
-        min-width: 0;
-    }
+  .contact-section {
+    flex-direction: column;
+    margin-top: 100px;
+    margin-bottom: 50px;
+  }
 
-    .my-project {
-        margin-bottom: 600px;
-    }
+  .footer { font-size: 10px; }
 
-    .project-card {
-        flex-direction: column;
-        margin-left: 25%;
-        gap: 30px;
-    }
+  .social-box { margin-left: 0; }
 
-    .project-vidbox {
-        min-width: 200px;
-    }
+  .experience-section {
+    padding: 40px 20px;
+    width: 90%;
+  }
 
-    .project-info {
-        width: 85%;
-    }
+  .job-header { flex-direction: column; }
+  .job-meta   { align-items: flex-start; }
 
-    .project-info h1 {
-        text-wrap: nowrap;
-    }
-
-    .project-info p {
-        max-width: 300px;
-    }
-
-    .Designer {
-        top: 15%;
-        left: 18%;
-    }
-
-    .Designer h1 {
-        margin-bottom: 0;
-        margin-top: 70px;
-    }
-
-    .coder {
-        top: 50%;
-        left: 18%;
-    }
-
-    .coder h1 {
-        margin-bottom: 0;
-    }
-
-    .slider .list .item img {
-        width: 70%;
-    }
-
-    .contact-section {
-        flex-direction: column;
-        margin-top: 100px;
-        margin-bottom: 50px;
-    }
-
-    .footer {
-        font-size: 10px;
-    }
-
-    .social-box {
-        margin-left: -90px;
-    }
+  .timeline-container { padding-left: 1.5rem; }
+  .timeline-dot       { left: -1.2rem; }
 }
 
 
+/* ============================================================
+   RESPONSIVE — 480px
+   ============================================================ */
 @media screen and (max-width: 480px) {
+  .blackhole-box {
+    overflow: hidden;
+  }
 
-    .hero .skills-video-box {
-        display: none;
+  .blackhole-box video {
+    width: 140%;
+    margin-top: -27%;
+  }
 
-    }
+  .left {
+    margin-left: -30px;
+  }
 
-    .blackhole-box {
-        overflow: hidden;
-    }
+  .left img { transform: scale(0.9); }
 
-    .blackhole-box video {
-        width: 140%;
-        margin-top: -27%;
+  .hero-info { bottom: 15%; }
 
-    }
+  .hero-info h1 { font-size: 35px; }
 
-    .left {
-        scale: 0.9;
-        margin-left: -30px;
-    }
+  .scroll-down {
+    bottom: 15%;
+    left: 60%;
+  }
 
-    .left h2 {
-        font-size: 20px;
-    }
+  .section-title { font-size: 25px; }
 
-    .hero {
-        scale: 0.9;
-    }
+  .info-cards { display: flex; flex-direction: column; }
 
-    .hero-info {
-        bottom: 15%;
-    }
+  .card { min-height: 20rem; }
 
-    .hero-info h1 {
-        font-size: 35px;
-    }
+  /* Fixed: was font-size: 5px — completely illegible */
+  .card h3 {
+    bottom: 30%;
+    font-size: 14px;
+  }
 
-    .scroll-down {
-        bottom: 15%;
-        left: 60%;
-    }
+  .project-info p { margin-bottom: 15px; }
 
-    .section-title {
-        font-size: 25px;
-    }
+  .skills-box {
+    height: 120vh;
+    margin-right: 30px;
+  }
 
-    .info-cards {
-        display: flex;
-        flex-direction: column;
-    }
+  .slider { bottom: 0; }
 
-    .card {
-        min-height: 20rem;
-    }
+  .contact-section {
+    height: 120vh;
+  }
 
-    .card h1 {
-        bottom: 30%;
-        font-size: 5px;
-    }
+  .contact-section .section-title {
+    top: -30px;
+    left: 25%;
+  }
 
-    .project-card {
-        height: 50%;
-    }
+  .footer { padding: 15px; }
 
-    .project-info p {
-        margin-bottom: 15px;
-    }
+  footer p { max-width: 150px; font-size: 11px; }
 
-    .project-info {
-        margin-left: -80px;
-    }
-
-    .skills-box {
-        height: 120vh;
-        margin-right: 30px;
-    }
-
-    .slider {
-        bottom: 0%;
-    }
-
-    .contact-section {
-        scale: 0.9;
-        height: 120vh;
-    }
-
-    .contact-section .section-title {
-        top: -30px;
-        left: 25%;
-    }
-
-    .footer {
-        padding: 15px;
-    }
-
-    .footer h1 {
-        max-width: 150px;
-    }
-
-    .footer .box-icons {
-        gap: 10px;
-    }
-
-
+  footer .box-icons { gap: 10px; }
 }
