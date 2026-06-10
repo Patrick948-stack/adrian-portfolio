@@ -296,9 +296,9 @@ header nav ul a:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
-  width: 30px;
-  height: 30px;
+  font-size: 22px;
+  width: 42px;
+  height: 42px;
   border: 2px solid var(--color-accent);
   text-decoration: none;
   color: var(--color-text);
@@ -1246,21 +1246,16 @@ footer {
   position: relative;
 }
 
-footer h1 {
+footer p {
   font-size: 15px;
+  margin: 0;
 }
 
 footer .box-icons {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-}
-
-footer .box-icons p i,
-footer .box-icons a i {
-  color: white;
-  margin-left: 10px;
+  gap: 16px;
 }
 
 
@@ -1508,80 +1503,349 @@ footer .box-icons a i {
   }
 }
 
+/* ============================================================
+   RESPONSIVE DESIGN
+   ============================================================
+
+   Beginner note:
+
+   Desktop layouts have lots of room, so it is tempting to place
+   things manually with position: absolute, fixed heights, and big
+   side-by-side sections.
+
+   On small screens, that becomes dangerous.
+
+   Imagine every section as a stack of books. Normal HTML elements
+   stack naturally. But position: absolute is like taking a book
+   out of the stack and taping it to the wall. It may look perfect
+   on desktop, but when the wall gets smaller on mobile, it crashes
+   into other things.
+
+   So the mobile strategy below is simple:
+
+   1. Keep the fancy desktop layout for large screens.
+   2. On tablets and phones, stop floating important text.
+   3. Let cards, skills, projects, and contact info stack naturally.
+   4. Replace fixed heights like height: 100vh with height: auto
+      when the content needs room to breathe.
+   ============================================================ */
+
 
 /* ============================================================
-   RESPONSIVE — 1200px
+   MEDIUM SCREENS — around laptops/tablets
+   Applies when the browser is 1200px wide or smaller.
    ============================================================ */
 @media screen and (max-width: 1200px) {
-  .blackhole-box video { margin-top: -20%; }
 
-  .hero-info h1 {
-    font-size: 40px;
-    max-width: 400px;
-    line-height: 40px;
+  /* The blackhole video was pulled upward a lot on desktop.
+     On smaller screens, we reduce that pull so it does not cover
+     the hero content too aggressively. */
+  .blackhole-box video {
+    margin-top: -20%;
   }
 
-  .hero-info p { max-width: 300px; }
+  /* The hero heading is huge on desktop. That is fine there,
+     but at smaller widths it needs to shrink. */
+  .hero-info h1 {
+    font-size: 44px;
+    line-height: 1.1;
+    max-width: 460px;
+  }
 
-  .info-cards { grid-template-columns: 1fr 1fr; }
+  .hero-info p {
+    max-width: 380px;
+  }
 
+  .hero-vid-box video {
+    width: 430px;
+    height: 430px;
+  }
+
+  /* Three cards in a row gets too tight around tablet size,
+     so we switch to two columns. */
+  .info-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* The third card was very tall on desktop.
+     On medium screens it can still be special, but not too extreme. */
   .card:nth-child(3) {
     grid-column: span 2;
     height: 70vh;
   }
 
-  /* h1→h3: heading selector corrected */
-  .info-cards .card h3      { font-size: 20px; }
-  .info-cards .card:nth-child(3) h3 { bottom: 25%; }
+  .info-cards .card h3 {
+    font-size: 20px;
+  }
 
-  .card video { height: auto; margin-top: 5%; }
-
-  .contact-section .section-title { left: 30%; }
+  .contact-section .section-title {
+    left: 30%;
+  }
 }
 
 
 /* ============================================================
-   RESPONSIVE — 700px
+   TABLETS AND SMALL SCREENS — 900px and below
+   This is the real responsive breakpoint.
+
+   At this size, we stop thinking "desktop but smaller."
+   We start thinking "mobile layout": one section after another.
    ============================================================ */
-@media screen and (max-width: 700px) {
+@media screen and (max-width: 900px) {
+
+  /* Because the header is fixed, it sits on top of the page.
+     Padding-top gives the content enough room so the header does
+     not cover the logo/name/hero area. */
+  main {
+    gap: 70px;
+    padding-top: 64px;
+  }
+
+  .container {
+    gap: 70px;
+  }
+
+  /* ---------------- HEADER ---------------- */
+
   header {
-    position: fixed;
-    height: 50px;
+    height: 56px;
+    padding: 0 16px;
   }
 
-  header nav  { display: none; }
-  header .box-icons { display: none; }
-
-  .menu-icon { display: inline-flex; }
-
-  .blackhole-box video { width: 100%; margin-top: -15%; }
-
-  /* Disable autoBlur on mobile — GPU is weaker, and the blur can cause jank */
-  .autoBlur { animation: none; opacity: 1; filter: none; }
-
-  .hero { flex-direction: column; top: 0; bottom: 0; left: 0; right: 0; }
-  .hero-info { bottom: 5%; }
-  .scroll-down { bottom: 5%; }
-
-  .info-cards { grid-template-columns: 1fr; }
-
-  .card:nth-child(3) {
-    grid-column: span 1;
-    height: 70vh;
+  .left {
+    margin-left: 0;
+    min-width: 0;
   }
 
-  .card video { width: 100%; }
+  .left img {
+    width: 58px;
+    margin: 0 8px 0 0;
+    transform: none;
+  }
 
-  .container { height: 100%; }
+  .brand-name {
+    font-size: 1.05rem;
+    white-space: nowrap;
+  }
 
-  /* Removed negative margins — use proper flex stacking instead */
-  .project-card {
-    flex-direction: column;
+  /* There is not enough room for full desktop nav links and social
+     icons on small screens, so we hide them and use the hamburger. */
+  header nav,
+  header .box-icons {
+    display: none;
+  }
+
+  .menu-icon {
+    display: inline-flex;
     align-items: center;
+    justify-content: center;
+  }
+
+  /* ---------------- HERO ---------------- */
+
+  .blackhole-box {
+    overflow: hidden;
+  }
+
+  .blackhole-box video {
+    width: 130%;
+    margin-top: -24%;
+  }
+
+  /* On desktop, the hero is exactly 100vh and the text is absolute.
+     On mobile, exact heights are risky because content may need more
+     than one screen. So we use height: auto and normal positioning. */
+  .hero {
+    height: auto;
+    min-height: calc(100vh - 56px);
+    padding: 48px 20px 80px;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+
+  .hero-info {
+    position: relative;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    width: 100%;
+    max-width: 620px;
+    z-index: 5;
+  }
+
+  .hero-info-title {
+    width: fit-content;
+    max-width: 100%;
+    font-size: 0.85rem;
+  }
+
+  .hero-info h1 {
+    font-size: clamp(2rem, 8vw, 3.4rem);
+    line-height: 1.08;
+    max-width: 100%;
+    margin: 24px 0 20px;
+  }
+
+  .hero-info p {
+    font-size: 1rem;
+    line-height: 1.6;
+    max-width: 100%;
+    margin-bottom: 28px;
+  }
+
+  /* The hero video should no longer float on the right.
+     It becomes part of the normal vertical stack. */
+  .hero-vid-box {
+    position: relative;
+    right: auto;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-top: 32px;
+    z-index: 3;
+  }
+
+  .hero-vid-box video {
+    width: min(84vw, 420px);
+    height: auto;
+  }
+
+  .scroll-down {
+    display: none;
+  }
+
+  /* Mobile devices are weaker than desktops.
+     These scroll blur animations can cause weird visibility issues,
+     so we make the content visible and calm on smaller screens. */
+  .autoBlur,
+  .autoDisplay,
+  .fadeInRight,
+  .fadein-left {
+    animation: none;
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+
+  /* ---------------- SHARED SECTION WIDTHS ---------------- */
+
+  .info-section,
+  .my-projects,
+  .experience-section,
+  .contact-section {
+    width: min(92%, 760px);
+  }
+
+  .section-title {
+    font-size: 2rem;
+    text-align: center;
+  }
+
+  /* ---------------- ABOUT CARDS ---------------- */
+
+  .info-section {
+    margin-top: 0;
+  }
+
+  .info-cards {
+    grid-template-columns: 1fr;
     gap: 20px;
   }
 
-  .project-vidbox {
+  /* This is one of the most important fixes.
+
+     Before:
+     - card text used position: absolute
+     - the card had a fixed height
+     - headings and paragraphs were manually placed with bottom: 35%
+       and bottom: 3%
+
+     Problem:
+     On a small card, those percentages can land on top of each other.
+
+     Now:
+     The card becomes a normal flex column. Image, title, paragraph,
+     and button stack naturally like a clean list. */
+  .card,
+  .card:nth-child(3),
+  .card:nth-child(4) {
+    grid-column: auto;
+    grid-row: auto;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+
+    padding: 18px;
+    gap: 12px;
+  }
+
+  .card h3,
+  .card p,
+  .card:nth-child(3) h3,
+  .card:nth-child(3) p,
+  .card:nth-child(4) h3,
+  .card:nth-child(4) p {
+    position: static;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    max-width: 100%;
+    margin: 0;
+  }
+
+  .card h3 {
+    font-size: 1.15rem;
+    line-height: 1.3;
+  }
+
+  .card p {
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .card img,
+  .card video {
+    order: -1;
+    width: 100%;
+    height: auto;
+    max-height: 280px;
+    object-fit: contain;
+    margin: 0 auto;
+  }
+
+  .card button {
+    position: static;
+    margin-top: 6px;
+  }
+
+  /* ---------------- PROJECTS ---------------- */
+
+  .my-projects {
+    margin-top: 40px;
+    margin-bottom: 60px;
+    gap: 44px;
+  }
+
+  .project-list {
+    gap: 64px;
+  }
+
+  .project-card {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 24px;
+    width: 100%;
+  }
+
+  .project-vidbox,
+  .project-vidbox.reel {
     width: 100%;
     min-width: 0;
   }
@@ -1589,128 +1853,323 @@ footer .box-icons a i {
   .project-info {
     width: 100%;
     padding-left: 0;
-    overflow: visible;
   }
 
-  /* h1→h3: heading selector corrected */
-  .project-info h3 {
-    font-size: 18px;
+  .project-info h3,
+  .project-info p {
+    width: 100%;
     max-width: 100%;
-    white-space: normal;
+  }
+
+  .project-info h3 {
+    font-size: 1.25rem;
+    line-height: 1.3;
   }
 
   .project-info p {
-    font-size: 14px;
-    max-width: 100%;
-    min-width: 0;
+    font-size: 0.95rem;
+    line-height: 1.65;
   }
 
-  /* Fixed: .Designer (capital D) never matched — corrected to .designer */
-  .designer {
-    top: 15%;
-    left: 18%;
+  .hover-sign {
+    display: none;
   }
 
-  /* Fixed: .Designer h1 → .designer h3 */
-  .designer h3 {
-    margin-bottom: 0;
-    margin-top: 70px;
+  /* ---------------- SKILLS ---------------- */
+
+  .skills-section {
+    width: 100%;
   }
 
-  /* Dead .coder rules removed — no element has that class; .photographer is the correct one */
-  .photographer {
-    top: 50%;
-    left: 18%;
-  }
+  /* This is the second big fix.
 
-  .photographer h3 { margin-bottom: 0; }
+     Before:
+     .designer and .photographer were absolute.
+     That means they floated over the brain image and carousel.
 
-  .slider .list .item img { width: 70%; }
+     Now:
+     The skills box becomes a vertical stack:
+     image -> Media Producer text -> Content Strategist text -> logos.
+  */
+  .skills-box {
+    height: auto;
+    min-height: 0;
+    width: min(92%, 760px);
 
-  .contact-section {
+    display: flex;
     flex-direction: column;
-    margin-top: 100px;
-    margin-bottom: 50px;
+    align-items: stretch;
+    justify-content: flex-start;
+
+    padding: 20px 0 40px;
+    gap: 24px;
+    opacity: 1;
+    margin-right: 0;
   }
 
-  .footer { font-size: 10px; }
+  .skills-image {
+    order: 1;
+    width: min(80%, 340px);
+    align-self: center;
+    margin: 0 auto;
+  }
 
-  .social-box { margin-left: 0; }
+  .designer,
+  .photographer {
+    position: static;
+    order: 2;
+    width: 100%;
+    max-width: 100%;
+    align-items: flex-start;
+  }
+
+  .photographer {
+    order: 3;
+  }
+
+  .skills-box h3 {
+    font-size: clamp(1.8rem, 7vw, 2.5rem);
+    line-height: 1.1;
+    margin: 0 0 8px;
+  }
+
+  .skills-box p {
+    line-height: 1.65;
+    margin: 0;
+  }
+
+  /* The carousel also stops floating at the bottom.
+     It becomes the last item in the stack. */
+  .slider {
+    order: 4;
+    position: relative;
+    right: auto;
+    bottom: auto;
+    width: 100%;
+    height: calc(var(--height) + 35px);
+    padding-top: 35px;
+    margin-top: 10px;
+    --width: 72px;
+    --height: 72px;
+  }
+
+  /* ---------------- EXPERIENCE ---------------- */
 
   .experience-section {
-    padding: 40px 20px;
-    width: 90%;
+    margin-top: 40px;
+    margin-bottom: 60px;
+    padding: 40px 22px;
   }
 
-  .job-header { flex-direction: column; }
-  .job-meta   { align-items: flex-start; }
+  .timeline-container {
+    padding-left: 1.4rem;
+  }
 
-  .timeline-container { padding-left: 1.5rem; }
-  .timeline-dot       { left: -1.2rem; }
+  .timeline-dot {
+    left: -1.2rem;
+  }
+
+  .job-header {
+    flex-direction: column;
+  }
+
+  .job-meta {
+    align-items: flex-start;
+  }
+
+  .job-card {
+    padding: 1.4rem;
+  }
+
+  /* ---------------- CONTACT ---------------- */
+
+  /* This is the third big fix.
+
+     Before:
+     "Let's talk" was position: absolute.
+     That made it float over the contact links/form.
+
+     Now:
+     The whole contact section stacks like a normal mobile form. */
+  .contact-section {
+    height: auto;
+    min-height: 0;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 30px;
+    padding: 40px 0 60px;
+  }
+
+  .contact-section .section-title {
+    position: static;
+    top: auto;
+    left: auto;
+    align-self: center;
+    margin: 0;
+  }
+
+  .social-box,
+  .contact-box {
+    width: 100%;
+  }
+
+  .social-box {
+    gap: 18px;
+  }
+
+  .social-box a {
+    font-size: 1rem;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .social-box i {
+    font-size: 1.5rem;
+  }
+
+  .contact-box p {
+    max-width: 100%;
+    line-height: 1.6;
+  }
+
+  .contact-box input {
+    width: 100%;
+    border-radius: 10px;
+  }
+
+  footer {
+    height: auto;
+    min-height: 50px;
+    padding: 12px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  footer p {
+    text-align: center;
+    font-size: 0.8rem;
+  }
 }
 
 
 /* ============================================================
-   RESPONSIVE — 480px
+   PHONES — 480px and below
+   These are extra refinements for very narrow screens.
    ============================================================ */
 @media screen and (max-width: 480px) {
-  .blackhole-box {
-    overflow: hidden;
+
+  main {
+    gap: 56px;
+    padding-top: 58px;
+  }
+
+  .container {
+    gap: 56px;
+  }
+
+  header {
+    height: 52px;
+    padding: 0 12px;
+  }
+
+  .left img {
+    width: 48px;
+  }
+
+  .brand-name {
+    font-size: 0.95rem;
+  }
+
+  .menu-icon {
+    font-size: 30px;
   }
 
   .blackhole-box video {
-    width: 140%;
-    margin-top: -27%;
+    width: 150%;
+    margin-top: -30%;
   }
 
-  .left {
-    margin-left: -30px;
+  .hero {
+    min-height: calc(100vh - 52px);
+    padding: 32px 16px 64px;
   }
 
-  .left img { transform: scale(0.9); }
-
-  .hero-info { bottom: 15%; }
-
-  .hero-info h1 { font-size: 35px; }
-
-  .scroll-down {
-    bottom: 15%;
-    left: 60%;
+  .hero-info h1 {
+    font-size: clamp(2rem, 11vw, 2.6rem);
   }
 
-  .section-title { font-size: 25px; }
+  .hero-info p {
+    font-size: 0.95rem;
+  }
 
-  .info-cards { display: flex; flex-direction: column; }
+  .hero-info button {
+    width: 100%;
+    justify-content: center;
+  }
 
-  .card { min-height: 20rem; }
+  .section-title {
+    font-size: 1.7rem;
+  }
 
-  /* Fixed: was font-size: 5px — completely illegible */
+  .card {
+    padding: 16px;
+  }
+
   .card h3 {
-    bottom: 30%;
-    font-size: 14px;
+    font-size: 1.05rem;
   }
 
-  .project-info p { margin-bottom: 15px; }
+  .card p {
+    font-size: 0.9rem;
+  }
+
+  .project-list {
+    gap: 52px;
+  }
+
+  .project-info h3 {
+    font-size: 1.1rem;
+  }
 
   .skills-box {
-    height: 120vh;
-    margin-right: 30px;
+    width: 92%;
+    gap: 22px;
   }
 
-  .slider { bottom: 0; }
+  .skills-image {
+    width: 86%;
+  }
+
+  .slider {
+    --width: 56px;
+    --height: 56px;
+    height: calc(var(--height) + 28px);
+    padding-top: 28px;
+  }
+
+  .experience-section {
+    width: 92%;
+    padding: 32px 16px;
+  }
+
+  .job-card {
+    padding: 1.1rem;
+  }
+
+  .job-bullets {
+    padding-left: 1rem;
+  }
 
   .contact-section {
-    height: 120vh;
+    width: 92%;
   }
 
-  .contact-section .section-title {
-    top: -30px;
-    left: 25%;
+  .social-sidebar a {
+    font-size: 30px;
   }
 
-  .footer { padding: 15px; }
-
-  footer p { max-width: 150px; font-size: 11px; }
-
-  footer .box-icons { gap: 10px; }
+  footer .box-icons {
+    gap: 10px;
+  }
 }
